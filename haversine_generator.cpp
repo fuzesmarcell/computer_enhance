@@ -71,24 +71,30 @@ int main(int argc, char** args) {
 	fprintf(json_file, json_start);
 
 	double result = 0.;
+	double result_coef = 1. / num_coordinates;
 
 	if (gen == GeneratorKind::uniform) {
 
+		int c = 0;
 		for (int i = 0; i < num_coordinates; i++) {
 			double x0 = rand_range(state, -180., 180.);
 			double y0 = rand_range(state, -180., 180.);
 			double x1 = rand_range(state, -180., 180.);
 			double y1 = rand_range(state, -180., 180.);
-			double h =referenceHaversine(x0, y0, x1, y1);
-			result += h;
+			double h = referenceHaversine(x0, y0, x1, y1);
+			result += h*result_coef;
 
 			fprintf(json_file, R"({"x0": %f, "y0": %f, "x1": %f, "y1": %f})", x0, y0, x1, y1);
 			fwrite(&h, sizeof(h), 1, bin_file);
+
+			c++;
 
 			if (i < (num_coordinates-1)) {
 				fprintf(json_file, ",\n");
 			}
 		}
+		fclose(bin_file);
+		int stophere = 5;
 	}
 	else {
 
@@ -115,7 +121,7 @@ int main(int argc, char** args) {
 				double x1 = x + rand_range(state, -r, r);
 				double y1 = y + rand_range(state, -r, r);
 				double h = referenceHaversine(x0, y0, x1, y1);
-				result += h;
+				result += h*result_coef;
 
 				fprintf(json_file, R"({"x0": %f, "y0": %f, "x1": %f, "y1": %f})", x0, y0, x1, y1);
 				fwrite(&h, sizeof(h), 1, bin_file);
@@ -134,7 +140,7 @@ int main(int argc, char** args) {
 	fprintf(json_file, "]\n}");
 	fclose(json_file);
 
-	double expected_result = result / num_coordinates;
+	double expected_result = result;
 
 	fwrite(&expected_result, sizeof(double), 1, bin_file);
 	fclose(bin_file);

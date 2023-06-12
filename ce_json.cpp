@@ -50,15 +50,13 @@ static std::tuple<bool, const char*, const char*> nextRange(Parser* p, int len) 
 static std::pair<bool, std::string_view> parseString(Parser* p, ceJSON* json) {
 
 	const char* start = p->at;
-	int str_count = 0;
 	for (;;) {
 		auto [s, c] = nextChar(p);
 		if (!s) return { false, {} };
 		if (c == '"') break;
-		str_count++;
 	}
 
-	std::string_view string(start, start + str_count);
+	std::string_view string(start, p->at - 1);
 
 	if (json != nullptr) {
 		json->kind = ceJSONKind::string;
@@ -70,7 +68,7 @@ static std::pair<bool, std::string_view> parseString(Parser* p, ceJSON* json) {
 
 static bool parseObject(Parser* p, ceJSON* json, bool hasKey) {
 
-	json->kind = ceJSONKind::object;
+	json->kind = hasKey ? ceJSONKind::object : ceJSONKind::array;
 
 	char end_char = hasKey ? '}' : '[';
 
@@ -99,6 +97,13 @@ static bool parseObject(Parser* p, ceJSON* json, bool hasKey) {
 			if (!s) return false;
 
 			if (c != ':') return false;
+		}
+		else {
+			// HACK: Move pointer back one.
+			// TODO: Define a more precise meaning where the `at` ptr should
+			// be point to. Is it the next char or is it the current one ?
+			// Should a number parser not expect to be on the first number it receives ?
+			p->at--;
 		}
 		
 		parseNode(p, next_json);
@@ -142,12 +147,10 @@ static bool parseLiteral(Parser* p, ceJSON* json, char begin_char) {
 	if (literal == nullptr)
 		return false;
 
-	auto [s, start, end] = nextRange(p, length);
+	auto [s, start, end] = nextRange(p, length-1);
 	if (!s) return false;
 
-	assert((end - start) == length);
-
-	int i = 0;
+	int i = 1;
 	for (const char* c = start; c < end; c++, i++) {
 		if (literal[i] != c[0]) {
 			return false;
@@ -228,15 +231,76 @@ bool parseNode(Parser* p, ceJSON* json) {
 	return true;
 }
 
-bool ceJSONParse(const char* buffer, size_t len) {
+ceJSON* ceJSONParse(const char* buffer, size_t len) {
 
 	Parser p = {
 		.at = buffer,
 		.end = buffer + len,
 	};
 
-	ceJSON root = {};
-	parseNode(&p, &root);
 
-	return true;
+	ceJSON* root = (ceJSON*)malloc(sizeof(ceJSON));
+	if (root == nullptr) {
+		return nullptr;
+	}
+
+	memset(root, 0, sizeof(*root));
+
+	parseNode(&p, root);
+
+	return root;
+}
+
+ceJSON* ceJSONGetByKey(ceJSON* json, const char* buffer) {
+
+	if (json->kind != ceJSONKind::object) {
+		return nullptr; /* must be a object otherwise we can not iterate over the keys inside it */
+	}
+
+	for (ceJSON* node = json->first_child; node; node = node->next) {
+		if (node->key.empty()) // TODO: Is this even possible ?
+			continue;
+
+		if (node->key == buffer) {
+			return node;
+		}
+	}
+
+	return nullptr;
+}
+
+ceJSONIterator ceJSONIterBegin(ceJSON* obj) {
+
+	ceJSONIterator result;
+	result.node = nullptr;
+	result.json = nullptr;
+
+	if (obj->kind == ceJSONKind::object || obj->kind == ceJSONKind::array) {
+		result.json = obj;
+		result.node = obj->first_child;
+	}
+
+	return result;
+}
+
+bool ceJSONIterValid(ceJSONIterator* iter) {
+	return iter->node != nullptr;
+}
+
+void ceJSONIterNext(ceJSONIterator* iter) {
+	iter->node = iter->node->next;
+}
+
+size_t ceJSONLen(ceJSON* json) {
+	size_t result = 0;
+
+	if (json->kind != ceJSONKind::object && json->kind != ceJSONKind::array) {
+		return result;
+	}
+
+	for (ceJSON* node = json->first_child; node; node = node->next) {
+		result++;
+	}
+
+	return result;
 }

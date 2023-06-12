@@ -26,4 +26,16 @@ struct ceJSON {
 	ceJSON* next;
 };
 
-bool ceJSONParse(const char* buffer, size_t len);
+ceJSON* ceJSONParse(const char* buffer, size_t len);
+ceJSON* ceJSONGetByKey(ceJSON* json, const char* buffer);
+
+struct ceJSONIterator {
+	ceJSON* json;
+	ceJSON* node;
+};
+
+ceJSONIterator ceJSONIterBegin(ceJSON* obj);
+bool ceJSONIterValid(ceJSONIterator* iter);
+void ceJSONIterNext(ceJSONIterator* iter);
+
+size_t ceJSONLen(ceJSON* json);
