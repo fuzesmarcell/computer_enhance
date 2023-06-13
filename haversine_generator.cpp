@@ -63,7 +63,7 @@ int main(int argc, char** args) {
 	FILE* json_file = fopen(json_file_name.c_str(), "w");
 
 	std::string bin_file_name = std::format("data_{}_haveranswer.double", num_coordinates);
-	FILE* bin_file = fopen(bin_file_name.c_str(), "w");
+	FILE* bin_file = fopen(bin_file_name.c_str(), "wb");
 
 	fwrite(&num_coordinates, sizeof(num_coordinates), 1, bin_file);
 
@@ -75,7 +75,6 @@ int main(int argc, char** args) {
 
 	if (gen == GeneratorKind::uniform) {
 
-		int c = 0;
 		for (int i = 0; i < num_coordinates; i++) {
 			double x0 = rand_range(state, -180., 180.);
 			double y0 = rand_range(state, -180., 180.);
@@ -87,14 +86,10 @@ int main(int argc, char** args) {
 			fprintf(json_file, R"({"x0": %f, "y0": %f, "x1": %f, "y1": %f})", x0, y0, x1, y1);
 			fwrite(&h, sizeof(h), 1, bin_file);
 
-			c++;
-
 			if (i < (num_coordinates-1)) {
 				fprintf(json_file, ",\n");
 			}
 		}
-		fclose(bin_file);
-		int stophere = 5;
 	}
 	else {
 

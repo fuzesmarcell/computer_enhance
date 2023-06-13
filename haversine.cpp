@@ -180,7 +180,11 @@ static void validation(FILE* f, HaversinePair* pairs, size_t pair_count, double 
 		return;
 	}
 
-	fseek(f, num_pairs*sizeof(double), SEEK_SET);
+	// For now this is not used we just read out the values in case we would like to compare the results
+	for (size_t i = 0; i < num_pairs; i++) {
+		double stub;
+		fread(&stub, sizeof(double), 1, f);
+	}
 
 	double expected;
 	fread(&expected, sizeof(double), 1, f);
