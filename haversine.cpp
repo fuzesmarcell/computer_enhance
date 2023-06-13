@@ -1,7 +1,10 @@
 /*
- * Reads the haversine distances from JSON and computes the result
- * and those a comparison against the reference binary if needed
- */
+Copyright (c) 2023, Fuzes Marcel
+All rights reserved.
+
+This source code is licensed under the BSD-style license found in the
+LICENSE file in the root directory of this source tree.
+*/
 
 #include "ce_json.h"
 

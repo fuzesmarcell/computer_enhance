@@ -1,8 +1,10 @@
 /*
- * Listing 65
- * JSON Haversine Generator
- * Two modes single or cluster
- */
+Copyright (c) 2023, Fuzes Marcel
+All rights reserved.
+
+This source code is licensed under the BSD-style license found in the
+LICENSE file in the root directory of this source tree.
+*/
 
 #include "haversine_reference.h"
 
@@ -12,6 +14,7 @@
 #include <algorithm>
 #include <assert.h>
 #include <format>
+#include <string>
 
 struct Xorshift32State {
 	uint32_t a;
