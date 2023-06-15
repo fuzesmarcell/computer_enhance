@@ -6,5 +6,7 @@ add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
 
 add_executable(haversine_generator "haversine_generator.cpp" "haversine_reference.h")
 add_library(ce_json "ce_json.h" "ce_json.cpp")
-add_executable(haversine "haversine.cpp")
+add_executable(haversine
+	"haversine.cpp"
+	"platform_metrics.h")
 target_link_libraries(haversine ce_json)
