@@ -9,6 +9,7 @@ LICENSE file in the root directory of this source tree.
 #include "ce_json.h"
 
 #include "haversine_reference.h"
+#include "platform_metrics.h"
 
 #include <string.h>
 #include <assert.h>
@@ -206,22 +207,31 @@ int main(int argc, char** args) {
 		return EXIT_FAILURE;
 	}
 
+	uint64_t cpu_freq = cpuTimerGuessFreq(100);
+
+	uint64_t read_timer = readCPUTimer();
 	char* json;
 	size_t json_len;
 	if (!load_entire_file(args[1], (void**)&json, &json_len)) {
 		fprintf(stderr, "Unable to load json file\n");
 		return EXIT_FAILURE;
 	}
+	read_timer = readCPUTimer() - read_timer;
 
+	uint64_t parse_timer = readCPUTimer();
 	HaversinePair* pairs;
 	size_t pair_count;
 	if (!parseAndAllocHaversineDistances(json, json_len, &pairs, &pair_count)) {
 		fprintf(stderr, "Unable to parse or allocate haversine pairs\n");
 		return EXIT_FAILURE;
 	}
+	parse_timer = readCPUTimer() - parse_timer;
 
+	uint64_t sum_timer = readCPUTimer();
 	double result = sumHaversineDistances(pairs, pair_count);
+	sum_timer = readCPUTimer() - sum_timer;
 
+	uint64_t validation_timer = readCPUTimer();
 	fprintf(stdout, "Input size: %llu\n", json_len);
 	fprintf(stdout, "Pair count: %llu\n", pair_count);
 	fprintf(stdout, "Haversine sum: %.16f\n", result);
@@ -231,6 +241,17 @@ int main(int argc, char** args) {
 		validation(f, pairs, pair_count, result);
 		fclose(f);
 	}
+	validation_timer = readCPUTimer() - validation_timer;
+
+	uint64_t total_timer = read_timer + parse_timer + sum_timer + validation_timer;
+	uint64_t elapsed_timer = validation_timer - read_timer;
+	double total_timer_d = (double)total_timer;
+
+	fprintf(stdout, "Total time: %.4fms (CPU freq %llu)\n", (total_timer / (double)cpu_freq) * 1000., cpu_freq);
+	fprintf(stdout, "  Read: %llu (%.2f%%)\n", read_timer, (read_timer / total_timer_d) * 100.);
+	fprintf(stdout, "  Parse: %llu (%.2f%%)\n", parse_timer, (parse_timer / total_timer_d) * 100.);
+	fprintf(stdout, "  Sum: %llu (%.2f%%)\n", sum_timer, (sum_timer / total_timer_d) * 100.);
+	fprintf(stdout, "  Validation: %llu (%.2f%%)\n", validation_timer, (validation_timer / total_timer_d) * 100.);
 
 	return EXIT_SUCCESS;
 }
